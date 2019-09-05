@@ -6,19 +6,20 @@ import (
 	"io"
 	"log"
 	"math"
+	"sort"
 	"strings"
 )
 
 func main() {
 
-	const jsonStream = `[{"Message": "Hello", "Number": 1.234}]`
+	const jsonStream = `[{"Message": [{"hello":[{"a" : "b"}, {"a" : "b"}, {"a" : "b"}]}], "Number": 1.234}]`
 	decoder := json.NewDecoder(strings.NewReader(jsonStream))
 
 	//Each entry will store count of array elements - index being array level
 	//0 -> count of 1st level array elements, 1 -> count of 2nd level array elements
 	lenCountSlice := make([]int, 0)
 	//Indicates the array level
-	bracesCount := 0
+	bracesCount := -1
 	//var stack []string
 
 	for {
@@ -45,20 +46,25 @@ func main() {
 			bracesCount--
 		}
 
-		if bracesCount > 0 {
-			//The incoming tokens are elements of an array
-			//The current bracesCount value indicates the current array level in the json
-			//Increment the count value at bracesCount index
-			if len(lenCountSlice) > bracesCount {
-				//Already have a value for this bracesCount index, as length of the slice is greater
-				lenCountSlice[bracesCount] = lenCountSlice[bracesCount] + 1
-			} else {
-				//Length of slice is less - slice does not have an entry at bracesCount index
-				//Append at this index with count as 1
-				lenCountSlice = append(lenCountSlice, 1)
+		if bracesCount > -1 {
+			//Starting of a new object in the json array - increment count
+			if tValue == "{" {
+				//The incoming tokens are elements of an array
+				//The current bracesCount value indicates the current array level in the json
+				//Increment the count value at bracesCount index
+				if len(lenCountSlice) > bracesCount {
+					//Already have a value for this bracesCount index, as length of the slice is greater
+					lenCountSlice[bracesCount] = lenCountSlice[bracesCount] + 1
+				} else {
+					//Length of slice is less - slice does not have an entry at bracesCount index
+					//Append at this index with count as 1
+					lenCountSlice = append(lenCountSlice, 1)
+				}
 			}
 		}
 	}
+	sort.Ints(lenCountSlice)
+	fmt.Println(lenCountSlice[len(lenCountSlice)-1])
 }
 
 func validateDepth() {
